@@ -1,3 +1,4 @@
+#include <cassert>
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -19,6 +20,8 @@ enum class TokenType {
     INTEGER,
     DOUBLE
 };
+
+
 
 struct Token {
     TokenType type_;
@@ -53,6 +56,14 @@ struct Token {
         }, value_);
 
         return ss.str();
+    }
+
+    static bool IsOpToken(Token t) {
+        return t.type_ == TokenType::PLUS || t.type_ == TokenType::MINUS;
+    }
+
+    static bool IsNumToken(Token t) {
+        return t.type_ == TokenType::INTEGER || t.type_ == TokenType::DOUBLE;
     }
 };
 
@@ -198,37 +209,50 @@ private:
         if (index_ == tokens_.size())
             return nullptr;
 
-        auto number_token = tokens_[index_];
-        index_++;
+        auto num_token = Consume();
+        assert(Token::IsNumToken(num_token.value()));
 
-//        while
-//
-//        auto op_token = tokens_[index_];
-//        index_++;
-//
-//        if (number_token.type_ != TokenType::INTEGER && number_token.type_ != TokenType::DOUBLE)
-//            throw std::logic_error("Invalid program");
-//
-//        if (op_token.type_ != TokenType::MINUS && op_token.type_ != TokenType::PLUS)
-//            throw std::logic_error("Invalid program");
-//
-//        auto node = std::make_unique<OpNode>(std::get<char>(op_token.value_));
-//        node->left_ = std::make_unique<NumberNode>(std::get<double>(op_token.value_));
-//        node->right_ = ParseExpr();
-//
-//        return node;
+        auto root = std::make_unique<NumberNode>(std::get<double>(num_token.value().value_));
+
+        auto* curr = reinterpret_cast<std::unique_ptr<ASTNode> *>(&root);
+
+
+        while (PeekN(1).has_value() && Token::IsOpToken(PeekN(1).value()) &&
+               PeekN(2).has_value() && Token::IsOpToken(PeekN(2).value())) {
+            auto op_node = std::make_unique<OpNode>(std::get<char>(Consume().value().value_));
+            auto num_node = std::make_unique<NumberNode>(std::get<double>(Consume().value().value_));
+
+            op_node->left_ = std::move(num_node);
+            op_node->right_ = std::move(*curr);
+
+            curr = reinterpret_cast<std::unique_ptr<ASTNode>* >(&op_node);
+        }
+
+        return std::move(*curr);
     }
 
     std::optional<Token> Peek() {
-        // TODO:
+        if (index_ >= tokens_.size())
+            return std::nullopt;
+
+        return tokens_[index_];
     }
 
     std::optional<Token> PeekN(int n) {
-         // TODO:
+         if (index_ + n >= tokens_.size())
+             return std::nullopt;
+
+         return tokens_[index_ + n];
     }
 
     std::optional<Token> Consume() {
-        // TODO:
+        if (index_ >= tokens_.size())
+            return std::nullopt;
+
+        Token token = tokens_[index_];
+        index_++;
+
+        return token;
     }
 
     Parser() = default;
@@ -249,6 +273,11 @@ public:
 
         std::vector<Token> tokens;
         tokenizer.Tokenize(src, tokens);
+
+        Parser& parser = Parser::GetInstance();
+        auto node = parser.Parse(tokens);
+
+
 
     }
 
