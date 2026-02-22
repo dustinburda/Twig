@@ -16,13 +16,16 @@ struct overloaded : Ts... {
 enum class TokenType {
     PLUS,
     MINUS,
-    INTEGER
+    INTEGER,
+    DOUBLE
 };
 
 struct Token {
     TokenType type_;
     std::variant<std::monostate,
-                 double> value_;
+                 int,
+                 double,
+                 char> value_;
 
     std::string toString() {
         std::stringstream ss;
@@ -35,6 +38,8 @@ struct Token {
                 ss << "MINUS";
             case TokenType::INTEGER:
                 ss << "INTEGER";
+            case TokenType::DOUBLE:
+                ss << "DOUBLE";
         }
 
         ss << "\n";
@@ -42,7 +47,9 @@ struct Token {
 
         std::visit(overloaded {
             [&ss](std::monostate) { ss << "None"; },
-            [&ss](double d){ ss << d;}
+            [&ss](char c) {ss << c;},
+            [&ss](double d){ ss << d;},
+            [&ss](int i) { ss << i;}
         }, value_);
 
         return ss.str();
@@ -68,17 +75,35 @@ public:
             auto curr_char = Consume().value();
 
             switch (curr_char) {
-                case '+': tokens.emplace_back(Token{TokenType::PLUS, std::monostate{} });
-                case '-': tokens.emplace_back(Token{TokenType::MINUS, std::monostate{} });
+                case '+': tokens.emplace_back(Token{TokenType::PLUS, curr_char });
+                case '-': tokens.emplace_back(Token{TokenType::MINUS, curr_char });
                 default: {
                     if (std::isdigit(curr_char)) {
+
                         std::string num {curr_char};
+
+                        TokenType type = TokenType::INTEGER;
 
                         while (Peek().has_value() && std::isdigit(Peek().value())) {
                             num += Consume().value();
                         }
 
-                        tokens.emplace_back(Token{TokenType::INTEGER, std::stod(num)});
+                        if (Peek().has_value() && Peek().value() == '.') {
+                            num += Consume().value();
+                            type = TokenType::DOUBLE;
+
+                            while (Peek().has_value() && std::isdigit(Peek().value())) {
+                                num += Consume().value();
+                            }
+
+                            tokens.emplace_back(Token{type, std::stod(num)});
+                        }
+                        else
+                        {
+                            tokens.emplace_back(Token{type, std::stoi(num)});
+                        }
+
+
                     }
                 }
 
@@ -132,8 +157,27 @@ private:
 };
 
 struct ASTNode {
-
+public:
+    virtual ~ASTNode() = 0;
 };
+
+struct NumberNode : public ASTNode {
+    NumberNode(double value) : value_{value} {}
+
+    double value_;
+    std::unique_ptr<ASTNode> left_;
+    std::unique_ptr<ASTNode> right_;
+};
+
+struct OpNode : public ASTNode {
+    OpNode(char value) : value_{value} {}
+
+    char value_;
+    std::unique_ptr<ASTNode> left_;
+    std::unique_ptr<ASTNode> right_;
+};
+
+
 
 class Parser {
 public:
@@ -142,11 +186,51 @@ public:
         return parser;
     }
 
-    std::shared_ptr<ASTNode> Parse(const std::vector<Token>& tokens) {
+    std::unique_ptr<ASTNode> Parse(const std::vector<Token>& tokens) {
+        tokens_ = tokens;
+        index_ = 0;
 
+        return ParseExpr();
     }
 
 private:
+    std::unique_ptr<ASTNode> ParseExpr() {
+        if (index_ == tokens_.size())
+            return nullptr;
+
+        auto number_token = tokens_[index_];
+        index_++;
+
+//        while
+//
+//        auto op_token = tokens_[index_];
+//        index_++;
+//
+//        if (number_token.type_ != TokenType::INTEGER && number_token.type_ != TokenType::DOUBLE)
+//            throw std::logic_error("Invalid program");
+//
+//        if (op_token.type_ != TokenType::MINUS && op_token.type_ != TokenType::PLUS)
+//            throw std::logic_error("Invalid program");
+//
+//        auto node = std::make_unique<OpNode>(std::get<char>(op_token.value_));
+//        node->left_ = std::make_unique<NumberNode>(std::get<double>(op_token.value_));
+//        node->right_ = ParseExpr();
+//
+//        return node;
+    }
+
+    std::optional<Token> Peek() {
+        // TODO:
+    }
+
+    std::optional<Token> PeekN(int n) {
+         // TODO:
+    }
+
+    std::optional<Token> Consume() {
+        // TODO:
+    }
+
     Parser() = default;
 
     std::vector<Token> tokens_;
