@@ -9,26 +9,34 @@
 
 #define OUT
 
-template<class... Ts>
-struct overloaded : Ts... {
-    using Ts::operator()...;
-};
-
 enum class TokenType {
     PLUS,
     MINUS,
     INTEGER,
-    DOUBLE
+    DOUBLE,
+    LEFT_PAREN,
+    RIGHT_PAREN
 };
 
 
-
 struct Token {
+    Token(int num) : type_{TokenType::INTEGER} {
+        int_num_ = num;
+    }
+
+    Token(double num) : type_{TokenType::DOUBLE} {
+        double_num_ = num;
+    }
+
+    Token(char c, TokenType type) : type_{type}, operation_{c} {}
+
     TokenType type_;
-    std::variant<std::monostate,
-                 int,
-                 double,
-                 char> value_;
+
+    union {
+        int int_num_;
+        double double_num_;
+        char operation_;
+    };
 
     std::string toString() {
         std::stringstream ss;
@@ -37,23 +45,33 @@ struct Token {
         switch (type_) {
             case TokenType::PLUS:
                 ss << "PLUS";
+                break;
             case TokenType::MINUS:
                 ss << "MINUS";
+                break;
             case TokenType::INTEGER:
                 ss << "INTEGER";
+                break;
             case TokenType::DOUBLE:
                 ss << "DOUBLE";
+                break;
         }
 
         ss << "\n";
         ss << "Value: ";
 
-        std::visit(overloaded {
-            [&ss](std::monostate) { ss << "None"; },
-            [&ss](char c) {ss << c;},
-            [&ss](double d){ ss << d;},
-            [&ss](int i) { ss << i;}
-        }, value_);
+        switch (type_) {
+            case TokenType::PLUS:
+            case TokenType::MINUS:
+                ss << operation_;
+                break;
+            case TokenType::INTEGER:
+                ss << int_num_;
+                break;
+            case TokenType::DOUBLE:
+                ss << double_num_;
+                break;
+        }
 
         return ss.str();
     }
@@ -78,6 +96,7 @@ public:
     void Tokenize(const std::string& src, OUT std::vector<Token>& tokens) {
         index_ = 0;
         src_ = src;
+        tokens.clear();
 
         ConsumeWhitespace();
 
@@ -86,8 +105,8 @@ public:
             auto curr_char = Consume().value();
 
             switch (curr_char) {
-                case '+': tokens.emplace_back(Token{TokenType::PLUS, curr_char });
-                case '-': tokens.emplace_back(Token{TokenType::MINUS, curr_char });
+                case '+': tokens.push_back(Token{curr_char, TokenType::PLUS}); break;
+                case '-': tokens.push_back(Token{curr_char, TokenType::MINUS}); break;
                 default: {
                     if (std::isdigit(curr_char)) {
 
@@ -107,11 +126,11 @@ public:
                                 num += Consume().value();
                             }
 
-                            tokens.emplace_back(Token{type, std::stod(num)});
+                            tokens.push_back(Token {std::stod(num)});
                         }
                         else
                         {
-                            tokens.emplace_back(Token{type, std::stoi(num)});
+                            tokens.push_back(Token {std::stoi(num)});
                         }
 
 
@@ -137,7 +156,7 @@ private:
             return std::nullopt;
 
         auto curr_char = src_[index_];
-        index_;
+        index_++;
 
         return curr_char;
     }
@@ -167,25 +186,48 @@ private:
     std::size_t index_;
 };
 
-struct ASTNode {
-public:
-    virtual ~ASTNode() = 0;
+enum class NodeType {
+    Double,
+    Int,
+    Op
 };
 
-struct NumberNode : public ASTNode {
-    NumberNode(double value) : value_{value} {}
+struct ASTNode {
+public:
+    ASTNode(NodeType type) : type_{type} {}
+    virtual ~ASTNode() = 0;
 
-    double value_;
+    NodeType type_;
     std::unique_ptr<ASTNode> left_;
     std::unique_ptr<ASTNode> right_;
+};
+ASTNode::~ASTNode() = default;
+
+
+// TODO: Virtual destructors
+struct DoubleNode : public ASTNode {
+    DoubleNode(double value) : ASTNode(NodeType::Double), value_{value} {}
+    virtual ~DoubleNode() = default;
+
+
+    double value_;
+
+};
+
+// TODO: Virtual destructors
+struct IntNode : public ASTNode {
+    IntNode(int value) : ASTNode(NodeType::Int), value_{value} {}
+    virtual ~IntNode() = default;
+
+
+    int value_;
 };
 
 struct OpNode : public ASTNode {
-    OpNode(char value) : value_{value} {}
+    OpNode(char value)  :ASTNode(NodeType::Op), value_{value} {}
+    virtual ~OpNode() = default;
 
     char value_;
-    std::unique_ptr<ASTNode> left_;
-    std::unique_ptr<ASTNode> right_;
 };
 
 
@@ -209,26 +251,32 @@ private:
         if (index_ == tokens_.size())
             return nullptr;
 
-        auto num_token = Consume();
-        assert(Token::IsNumToken(num_token.value()));
 
-        auto root = std::make_unique<NumberNode>(std::get<double>(num_token.value().value_));
+        std::unique_ptr<ASTNode> root_node = ParseNumNode(Consume().value());
+        while (Peek().has_value() && Token::IsOpToken(Peek().value())) {
+            auto op = std::make_unique<OpNode>(Consume().value().operation_);
+            auto num_node = ParseNumNode(Consume().value());
 
-        auto* curr = reinterpret_cast<std::unique_ptr<ASTNode> *>(&root);
+            op->left_ = std::move(root_node);
+            op->right_ = std::move(num_node);
 
-
-        while (PeekN(1).has_value() && Token::IsOpToken(PeekN(1).value()) &&
-               PeekN(2).has_value() && Token::IsOpToken(PeekN(2).value())) {
-            auto op_node = std::make_unique<OpNode>(std::get<char>(Consume().value().value_));
-            auto num_node = std::make_unique<NumberNode>(std::get<double>(Consume().value().value_));
-
-            op_node->left_ = std::move(num_node);
-            op_node->right_ = std::move(*curr);
-
-            curr = reinterpret_cast<std::unique_ptr<ASTNode>* >(&op_node);
+            root_node = std::move(op);
         }
 
-        return std::move(*curr);
+        return std::move(root_node);
+    }
+
+    std::unique_ptr<ASTNode> ParseNumNode(const Token& t) {
+        switch (t.type_) {
+            case TokenType::DOUBLE:
+                return std::make_unique<DoubleNode>(t.double_num_);
+            case TokenType::INTEGER:
+                return std::make_unique<IntNode>(t.int_num_);
+            default:
+                throw std::logic_error("Can't parse num node with non-number token.");
+        }
+
+        return nullptr;
     }
 
     std::optional<Token> Peek() {
@@ -239,10 +287,10 @@ private:
     }
 
     std::optional<Token> PeekN(int n) {
-         if (index_ + n >= tokens_.size())
+         if (index_ + n - 1 >= tokens_.size())
              return std::nullopt;
 
-         return tokens_[index_ + n];
+         return tokens_[index_ + n - 1];
     }
 
     std::optional<Token> Consume() {
@@ -261,6 +309,37 @@ private:
     std::size_t index_;
 };
 
+enum class ValueType {
+    Int,
+    Double
+};
+
+struct Value {
+public:
+    ValueType type;
+
+    union {
+        int int_value;
+        double double_value;
+    };
+
+    Value (int i) : type{ValueType::Int}, int_value{i} {}
+    Value (double d) : type{ValueType::Double}, double_value{d} {}
+
+    friend std::ostream& operator<<(std::ostream& os, Value& v);
+};
+
+std::ostream& operator<<(std::ostream& os, Value& v) {
+    switch (v.type) {
+        case ValueType::Int:
+            os << v.int_value; break;
+        case ValueType::Double:
+            os << v.double_value; break;
+    }
+
+    return os;
+}
+
 class Interpreter {
 public:
     static Interpreter& GetInstance() {
@@ -275,13 +354,37 @@ public:
         tokenizer.Tokenize(src, tokens);
 
         Parser& parser = Parser::GetInstance();
-        auto node = parser.Parse(tokens);
+        auto ast = std::move(parser.Parse(tokens));
 
+        auto result = Evaluate(ast);
 
-
+        std::cout << result << std::endl;
     }
 
 private:
+    Value Evaluate(std::unique_ptr<ASTNode>& ast) {
+        if (ast->type_ == NodeType::Double)
+            return Value{static_cast<DoubleNode*>(ast.get())->value_};
+        if (ast->type_ == NodeType::Int)
+            return Value{static_cast<IntNode*>(ast.get())->value_};
+
+        if (ast->type_ == NodeType::Op) {
+            auto operation = static_cast<OpNode*>(ast.get())->value_;
+            auto left = Evaluate(ast->left_);
+            auto right = Evaluate(ast->right_);
+
+            auto left_num = left.type == ValueType::Int ? left.int_value : left.double_value;
+            auto right_num = right.type == ValueType::Int ? right.int_value : right.double_value;
+
+            switch (operation) {
+                case '+':
+                    return Value{left_num + right_num};
+                case '-':
+                    return Value{left_num - right_num};
+            }
+        }
+    }
+
     Interpreter() = default;
 };
 
