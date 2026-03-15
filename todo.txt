@@ -18,12 +18,64 @@ Tokens:
 <double>  ::= [0-9]+ '.' [0-9]+
 <plus>    ::= '+'
 <minus>   ::= '-'
+<mult>    ::= '*'
+<divide>  ::= '/'
 <num>     ::= <integer> | <double>
-<op>      ::= <plus> | <minus>
+<op>      ::= <plus> | <minus> | <mult> | <divide>
 
 
 Grammar:
 
-<expr> ::= <num> { <op> <num> }*
+<expr> ::= <expr> <op> <num>
+         | <num>
 <num>  ::= <integer> | <double>
 <op>   ::= '+' | '-'
+
+<expr> ::= <expr> ('+' | '-') <term>
+         | <term>
+<term> ::= <term>  ('*' | '/') <num>
+        | num
+<num>  ::= <integer> | <double>
+<op>   ::= '+' | '-'
+
+
+
+<expr> ::= <expr> (<plus>|<minus>) <term>
+        |  <term>
+<term> ::= <term> (<mult>|<divide>) <factor>
+        | <factor>
+<factor> ::= ( <expr> )
+         | <num>
+<num>  ::= <integer> | <double>
+<op>   ::= '+' | '-'| '*' | '/'
+
+
+
+REMOVE LEFT RECURSION
+
+
+
+<expr> ::= <term> <expr'>
+<expr'> ::= ('+' | '-') <term>
+          | e
+
+<term> ::= <factor> <term'>
+<term'> ::= (<mult>|<divide>) <factor>
+          | e
+
+<factor> ::= ( <expr> )
+         | <num>
+
+
+<num>  ::= <integer> | <double>
+<op>   ::= '+' | '-'| '*' | '/'
+
+
+
+
+
+
+1 + 2 - 3 * 4 - 6 / 3
+
+
+1 + 2 - 12 - 2

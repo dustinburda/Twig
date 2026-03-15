@@ -12,6 +12,8 @@
 enum class TokenType {
     PLUS,
     MINUS,
+    MULTIPLICATION,
+    DIVISION,
     INTEGER,
     DOUBLE,
     LEFT_PAREN,
@@ -36,6 +38,7 @@ struct Token {
         int int_num_;
         double double_num_;
         char operation_;
+        char character_;
     };
 
     std::string toString() {
@@ -49,10 +52,22 @@ struct Token {
             case TokenType::MINUS:
                 ss << "MINUS";
                 break;
+            case TokenType::MULTIPLICATION:
+                ss << "MULTIPLICATION";
+                break;
+            case TokenType::DIVISION:
+                ss << "DIVISION";
+                break;
             case TokenType::INTEGER:
                 ss << "INTEGER";
                 break;
             case TokenType::DOUBLE:
+                ss << "DOUBLE";
+                break;
+            case TokenType::LEFT_PAREN:
+                ss << "DOUBLE";
+                break;
+            case TokenType::RIGHT_PAREN:
                 ss << "DOUBLE";
                 break;
         }
@@ -63,6 +78,8 @@ struct Token {
         switch (type_) {
             case TokenType::PLUS:
             case TokenType::MINUS:
+            case TokenType::MULTIPLICATION:
+            case TokenType::DIVISION:
                 ss << operation_;
                 break;
             case TokenType::INTEGER:
@@ -71,13 +88,21 @@ struct Token {
             case TokenType::DOUBLE:
                 ss << double_num_;
                 break;
+            case TokenType::LEFT_PAREN:
+            case TokenType::RIGHT_PAREN:
+                ss << character_;
+                break;
         }
 
         return ss.str();
     }
 
-    static bool IsOpToken(Token t) {
+    static bool IsSumToken(Token t) {
         return t.type_ == TokenType::PLUS || t.type_ == TokenType::MINUS;
+    }
+
+    static bool IsMultToken(Token t) {
+        return t.type_ == TokenType::MULTIPLICATION || t.type_ == TokenType::DIVISION;
     }
 
     static bool IsNumToken(Token t) {
@@ -107,6 +132,10 @@ public:
             switch (curr_char) {
                 case '+': tokens.push_back(Token{curr_char, TokenType::PLUS}); break;
                 case '-': tokens.push_back(Token{curr_char, TokenType::MINUS}); break;
+                case '*': tokens.push_back(Token{curr_char, TokenType::PLUS}); break;
+                case '/': tokens.push_back(Token{curr_char, TokenType::MINUS}); break;
+                case '(': tokens.push_back(Token{curr_char, TokenType::LEFT_PAREN}); break;
+                case ')': tokens.push_back(Token{curr_char, TokenType::RIGHT_PAREN}); break;
                 default: {
                     if (std::isdigit(curr_char)) {
 
@@ -204,7 +233,6 @@ public:
 ASTNode::~ASTNode() = default;
 
 
-// TODO: Virtual destructors
 struct DoubleNode : public ASTNode {
     DoubleNode(double value) : ASTNode(NodeType::Double), value_{value} {}
     virtual ~DoubleNode() = default;
@@ -214,7 +242,6 @@ struct DoubleNode : public ASTNode {
 
 };
 
-// TODO: Virtual destructors
 struct IntNode : public ASTNode {
     IntNode(int value) : ASTNode(NodeType::Int), value_{value} {}
     virtual ~IntNode() = default;
@@ -252,10 +279,10 @@ private:
             return nullptr;
 
 
-        std::unique_ptr<ASTNode> root_node = ParseNumNode(Consume().value());
-        while (Peek().has_value() && Token::IsOpToken(Peek().value())) {
-            auto op = std::make_unique<OpNode>(Consume().value().operation_);
-            auto num_node = ParseNumNode(Consume().value());
+        std::unique_ptr<ASTNode> root_node = ParseTerm();
+        while (Peek().has_value() && Token::IsSumToken(Peek().value())) {
+            auto op = ParseOp();
+            auto num_node = ParseTerm();
 
             op->left_ = std::move(root_node);
             op->right_ = std::move(num_node);
@@ -266,12 +293,65 @@ private:
         return std::move(root_node);
     }
 
-    std::unique_ptr<ASTNode> ParseNumNode(const Token& t) {
+    std::unique_ptr<ASTNode> ParseTerm() {
+        if (index_ == tokens_.size())
+            return nullptr;
+
+        auto root_node = ParseFactor();
+        while (Peek().has_value() && Token::IsMultToken(Peek().value())) {
+            auto op = ParseOp();
+        }
+
+        return root_node;
+    }
+
+    std::unique_ptr<ASTNode> ParseFactor() {
+        if (!Peek().has_value())
+            return nullptr;
+
+        auto token = Peek().value();
+
+        if (Token::IsNumToken(token)) {
+            return ParseNum();
+        }
+
+        return ParseExpr();
+    }
+
+
+    std::unique_ptr<ASTNode> ParseNum() {
+        if (!Peek().has_value())
+            return nullptr;
+
+        auto t = Consume().value();
+
         switch (t.type_) {
             case TokenType::DOUBLE:
                 return std::make_unique<DoubleNode>(t.double_num_);
             case TokenType::INTEGER:
                 return std::make_unique<IntNode>(t.int_num_);
+            default:
+                throw std::logic_error("Can't parse num node with non-number token.");
+        }
+
+        return nullptr;
+    }
+
+    std::unique_ptr<ASTNode> ParseOp() {
+        if (!Peek().has_value())
+            return nullptr;
+
+        auto t = Consume().value();
+
+        switch (t.type_) {
+            case TokenType::PLUS:
+                return std::make_unique<OpNode>(t.operation_);
+            case TokenType::MINUS:
+                return std::make_unique<IntNode>(t.operation_);
+            case TokenType::MULTIPLICATION:
+                return std::make_unique<IntNode>(t.operation_);
+            case TokenType::DIVISION:
+                return std::make_unique<IntNode>(t.operation_);
             default:
                 throw std::logic_error("Can't parse num node with non-number token.");
         }
@@ -381,8 +461,14 @@ private:
                     return Value{left_num + right_num};
                 case '-':
                     return Value{left_num - right_num};
+                case '*':
+                    return Value{left_num * right_num};
+                case '/':
+                    return Value{left_num / right_num};
             }
         }
+
+        throw std::logic_error("Can't be evaluated!");
     }
 
     Interpreter() = default;
