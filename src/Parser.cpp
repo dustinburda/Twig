@@ -1,4 +1,4 @@
-#include "Parser.h"
+#include "../include/Parser.h"
 
 std::unique_ptr<ASTNode> Parser::Parse(const std::vector<Token>& tokens) {
     tokens_ = tokens;

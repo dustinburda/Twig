@@ -3,6 +3,6 @@ project(Twig)
 
 set(CMAKE_CXX_STANDARD 23)
 
-file (GLOB SRC_FILES *.cpp)
+file (GLOB SRC_FILES src/*.cpp)
 
 add_executable(Twig ${SRC_FILES})
