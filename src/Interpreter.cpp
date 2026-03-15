@@ -2,7 +2,7 @@
 // Created by Dustin on 3/15/26.
 //
 
-#include "Interpreter.h"
+#include "../include/Interpreter.h"
 
 void Interpreter::Interpret(std::string& src) {
     Tokenizer& tokenizer = Tokenizer::GetInstance();

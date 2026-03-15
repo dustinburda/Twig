@@ -7,7 +7,7 @@
 #include <variant>
 #include <memory>
 
-#include "Interpreter.h"
+#include "../include/Interpreter.h"
 
 int main() {
     Interpreter& interpreter = Interpreter::GetInstance();
