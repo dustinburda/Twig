@@ -95,11 +95,11 @@ std::unique_ptr<ASTNode> Parser::ParseOp() {
         case TokenType::PLUS:
             return std::make_unique<OpNode>(t.operation_);
         case TokenType::MINUS:
-            return std::make_unique<IntNode>(t.operation_);
+            return std::make_unique<OpNode>(t.operation_);
         case TokenType::MULTIPLICATION:
-            return std::make_unique<IntNode>(t.operation_);
+            return std::make_unique<OpNode>(t.operation_);
         case TokenType::DIVISION:
-            return std::make_unique<IntNode>(t.operation_);
+            return std::make_unique<OpNode>(t.operation_);
         default:
             throw std::logic_error("Can't parse num node with non-number token.");
     }

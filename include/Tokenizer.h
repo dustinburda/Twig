@@ -22,6 +22,7 @@ private:
     std::optional<char> Peek();
     std::string PeekN(int n);
     std::optional<char> Consume();
+    Token ConsumeNum();
     void ConsumeWhitespace();
 
 

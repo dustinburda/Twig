@@ -9,7 +9,8 @@
 
 enum class ValueType {
     Int,
-    Double
+    Double,
+    Boolean
 };
 
 struct Value {
@@ -19,6 +20,7 @@ public:
     union {
         int int_value;
         double double_value;
+        bool bool_value;
     };
 
     Value (int i) : type{ValueType::Int}, int_value{i} {}
