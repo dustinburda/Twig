@@ -11,7 +11,7 @@ void Interpreter::Interpret(std::string& src) {
     tokenizer.Tokenize(src, tokens);
 
     Parser& parser = Parser::GetInstance();
-    auto ast = std::move(parser.Parse(tokens));
+    auto ast = parser.Parse(tokens);
 
     auto result = Evaluate(ast);
 
@@ -32,15 +32,14 @@ Value Interpreter::Evaluate(std::unique_ptr<ASTNode>& ast) {
         auto left_num = left.type == ValueType::Int ? left.int_value : left.double_value;
         auto right_num = right.type == ValueType::Int ? right.int_value : right.double_value;
 
-        switch (operation) {
-            case '+':
-                return Value{left_num + right_num};
-            case '-':
-                return Value{left_num - right_num};
-            case '*':
-                return Value{left_num * right_num};
-            case '/':
-                return Value{left_num / right_num};
+        if (operation == "+") {
+            return Value{left_num + right_num};
+        } else if (operation == "-") {
+            return Value{left_num - right_num};
+        } else if (operation == "*") {
+            return Value{left_num * right_num};
+        } else if (operation == "/") {
+            return Value{left_num / right_num};
         }
     }
 

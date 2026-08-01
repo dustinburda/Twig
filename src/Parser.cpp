@@ -24,7 +24,7 @@ std::unique_ptr<ASTNode> Parser::ParseExpr() {
         root_node = std::move(op);
     }
 
-    return std::move(root_node);
+    return root_node;
 }
 
 std::unique_ptr<ASTNode> Parser::ParseTerm() {
@@ -34,6 +34,12 @@ std::unique_ptr<ASTNode> Parser::ParseTerm() {
     auto root_node = ParseFactor();
     while (Peek().has_value() && Token::IsMultToken(Peek().value())) {
         auto op = ParseOp();
+        auto factor = ParseFactor();
+
+        op->left_ = std::move(root_node);
+        op->right_ = std::move(factor);
+
+        root_node = std::move(op);
     }
 
     return root_node;
@@ -49,7 +55,15 @@ std::unique_ptr<ASTNode> Parser::ParseFactor() {
         return ParseNum();
     }
 
-    return ParseExpr();
+    if (token.type_ == TokenType::LEFT_PAREN) {
+        Consume(); // (
+        auto expr = ParseExpr();
+        Consume(); // )
+
+        return expr;
+    }
+
+    throw std::logic_error("Unrecognized Factor expression!");
 }
 
 
@@ -81,11 +95,11 @@ std::unique_ptr<ASTNode> Parser::ParseOp() {
         case TokenType::PLUS:
             return std::make_unique<OpNode>(t.operation_);
         case TokenType::MINUS:
-            return std::make_unique<IntNode>(t.operation_);
+            return std::make_unique<OpNode>(t.operation_);
         case TokenType::MULTIPLICATION:
-            return std::make_unique<IntNode>(t.operation_);
+            return std::make_unique<OpNode>(t.operation_);
         case TokenType::DIVISION:
-            return std::make_unique<IntNode>(t.operation_);
+            return std::make_unique<OpNode>(t.operation_);
         default:
             throw std::logic_error("Can't parse num node with non-number token.");
     }

@@ -38,10 +38,10 @@ struct IntNode : public ASTNode {
 };
 
 struct OpNode : public ASTNode {
-    OpNode(char value)  :ASTNode(NodeType::Op), value_{value} {}
+    OpNode(std::string value)  :ASTNode(NodeType::Op), value_{value} {}
     virtual ~OpNode() = default;
 
-    char value_;
+    std::string value_;
 };
 
 #endif //TWIG_NODES_H

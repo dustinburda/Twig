@@ -26,28 +26,103 @@ Tokens:
 
 Grammar:
 
+V1:
 <expr> ::= <expr> <op> <num>
          | <num>
 <num>  ::= <integer> | <double>
 <op>   ::= '+' | '-'
 
-<expr> ::= <expr> ('+' | '-') <term>
-         | <term>
-<term> ::= <term>  ('*' | '/') <num>
+
+V2:
+<expr> := <add>
+<add> ::= <add> ('+' | '-') <mult>
+         | <mult>
+<mult> ::= <term>  ('*' | '/') <num>
         | num
 <num>  ::= <integer> | <double>
-<op>   ::= '+' | '-'
 
 
-
-<expr> ::= <expr> (<plus>|<minus>) <term>
-        |  <term>
-<term> ::= <term> (<mult>|<divide>) <factor>
+V3:
+<expr> := <add>
+<add> ::= <add> ('+'|'-') <mult>
+        |  <mult>
+<mult> ::= <mult> ('*'|'/') <factor>
         | <factor>
 <factor> ::= ( <expr> )
          | <num>
 <num>  ::= <integer> | <double>
-<op>   ::= '+' | '-'| '*' | '/'
+
+
+V4:
+<expr> := <logical>
+<logical> := <logical> ('&&' | '||') <add>
+            | <add>
+<add> ::= <add> ('+'|'-') <mult>
+        |  <mult>
+<mult> ::= <mult> ('*'|'/') <factor>
+        | <factor>
+<factor> ::= ( <expr> )
+         | <num>
+<num>  ::= <integer> | <double>
+
+
+V5:
+<expr> := <equality>
+<equality> := <equality> ('==' | '!=') <comparison>
+            | <comparison>
+<comparison> := <comparison> ('<=' | '<' | '>=' | '>') <logical>
+             | <logical>
+<logical> := <logical> ('&&' | '||') <add>
+            | <add>
+<add> ::= <add> ('+'|'-') <mult>
+        |  <mult>
+<mult> ::= <mult> ('*'|'/') <factor>
+        | <factor>
+<factor> ::= ( <expr> )
+         | <num>
+         | <bool>
+<num>  ::= <integer> | <double>
+<bool> ::= 'true' | 'false'
+
+
+V6:
+<expr> := <equality>
+<equality> := <equality> ('==' | '!=') <comparison>
+            | <comparison>
+<comparison> := <comparison> ('<=' | '<' | '>=' | '>') <logical>
+             | <logical>
+<logical> := <logical> ('&&' | '||') <add>
+            | <add>
+<add> ::= <add> ('+'|'-') <mult>
+        |  <mult>
+<mult> ::= <mult> ('*'|'/') <factor>
+        | <factor>
+<factor> ::= ( <expr> )
+         | <num>
+         | <bool>
+<num>  ::= <integer> | <double>
+<bool> ::= 'true' | 'false'
+
+
+V7:
+<expr> := <logical>
+<logical> := <logical> ('&&' | '||') <equality>
+            | <equality>
+<equality> := <equality> ('==' | '!=') <comparison>
+            | <comparison>
+<comparison> := <comparison> ('<=' | '<' | '>=' | '>') <add>
+             | <add>
+<add> ::= <add> ('+'|'-') <mult>
+        |  <mult>
+<mult> ::= <mult> ('*'|'/') <unary>
+        | <unary>
+<unary> := ('!' | '-') <primary>
+        | <primary>
+<primary> := ( <expr> )
+        | <num>
+        | <bool>
+<num>  ::= <integer> | <double>
+<bool> ::= 'true' | 'false'
 
 
 
