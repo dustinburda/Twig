@@ -7,7 +7,7 @@ on:
 jobs:
   build-and-test:
     name: ${{ matrix.os }} / ${{ matrix.compiler }} debug
-    runs-on: ${{matrix.compiler}}
+    runs-on: ${{matrix.os}}
 
     strategy:
       fail-fast: false
