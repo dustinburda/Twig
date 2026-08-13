@@ -1,47 +1,57 @@
 #ifndef TWIG_NODES_H
 #define TWIG_NODES_H
 
-#include <memory>
-
-enum class NodeType {
-    Double,
-    Int,
-    Op
-};
+#include "Value.h"
 
 struct ASTNode {
-public:
-    ASTNode(NodeType type) : type_{type} {}
-    virtual ~ASTNode() = default;
-
-    NodeType type_;
-    std::unique_ptr<ASTNode> left_;
-    std::unique_ptr<ASTNode> right_;
-};
-
-
-struct DoubleNode : public ASTNode {
-    DoubleNode(double value) : ASTNode(NodeType::Double), value_{value} {}
-    virtual ~DoubleNode() = default;
-
-
-    double value_;
 
 };
 
-struct IntNode : public ASTNode {
-    IntNode(int value) : ASTNode(NodeType::Int), value_{value} {}
-    virtual ~IntNode() = default;
 
 
-    int value_;
+struct Literal : ASTNode {
+    Value value_;
 };
 
-struct OpNode : public ASTNode {
-    OpNode(std::string value)  :ASTNode(NodeType::Op), value_{value} {}
-    virtual ~OpNode() = default;
+enum class BinaryOperation {
+    PLUS,
+    MINUS,
+    MULTIPLICATION,
+    DIVISION,
 
-    std::string value_;
+
+    BANG_EQUAL,
+    EQUAL_EQUAL,
+
+    LESS,
+    LESS_EQUAL,
+    GREATER,
+    GREATER_EQUAL,
+
+    AND,
+    OR,
 };
+
+struct Binary : ASTNode {
+    BinaryOperation operation_;
+    std::unique_ptr<ASTNode> left_expr_;
+    std::unique_ptr<ASTNode> right_expr_;
+};
+
+enum class UnaryOperation {
+    LogicalNot,
+    Negate
+};
+
+struct Unary : ASTNode {
+
+    UnaryOperation operation_;
+    std::unique_ptr<ASTNode> expr_;
+};
+
+struct Grouping : ASTNode {
+    std::unique_ptr<ASTNode> expr_;
+};
+
 
 #endif //TWIG_NODES_H

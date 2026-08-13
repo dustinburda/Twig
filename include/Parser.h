@@ -1,6 +1,7 @@
 #ifndef TWIG_PARSER_H
 #define TWIG_PARSER_H
 
+#include <memory>
 #include <optional>
 #include <vector>
 
