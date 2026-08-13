@@ -7,15 +7,14 @@
 void Interpreter::Interpret(std::string& src) {
     Tokenizer& tokenizer = Tokenizer::GetInstance();
 
-    std::vector<Token> tokens;
-    tokenizer.Tokenize(src, tokens);
-
-    Parser& parser = Parser::GetInstance();
-    auto ast = parser.Parse(tokens);
-
-    auto result = Evaluate(ast);
-
-    std::cout << result << std::endl;
+    [[ maybe_unused ]] auto tokens = tokenizer.Tokenize(src);
+    //
+    // Parser& parser = Parser::GetInstance();
+    // auto ast = parser.Parse(tokens);
+    //
+    // auto result = Evaluate(ast);
+    //
+    // std::cout << result << std::endl;
 }
 
 Value Interpreter::Evaluate(std::unique_ptr<ASTNode>& ast) {

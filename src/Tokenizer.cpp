@@ -3,34 +3,51 @@
 #include <stdexcept>
 
 
-void Tokenizer::Tokenize(const std::string& src, OUT std::vector<Token>& tokens) {
+std::vector<Token> Tokenizer::Tokenize(const std::string& src) {
+    std::vector<Token> tokens;
+
     index_ = 0;
     src_ = src;
-    tokens.clear();
 
     ConsumeWhitespace();
 
     while (Peek().has_value()) {
         ConsumeWhitespace();
+
+        if (!Peek().has_value())
+            break;
+
         auto curr_char = Peek().value();
 
         switch (curr_char) {
-            case '+': Consume(); tokens.push_back(Token{&curr_char, TokenType::PLUS}); break;
-            case '-': Consume(); tokens.push_back(Token{&curr_char, TokenType::MINUS}); break;
-            case '*': Consume(); tokens.push_back(Token{&curr_char, TokenType::MULTIPLICATION}); break;
-            case '/': Consume(); tokens.push_back(Token{&curr_char, TokenType::DIVISION}); break;
-            case '(': Consume(); tokens.push_back(Token{&curr_char, TokenType::LEFT_PAREN}); break;
-            case ')': Consume(); tokens.push_back(Token{&curr_char, TokenType::RIGHT_PAREN}); break;
-            case '{': Consume(); tokens.push_back(Token{&curr_char, TokenType::LEFT_BRACE}); break;
-            case '}': Consume(); tokens.push_back(Token{&curr_char, TokenType::RIGHT_BRACE}); break;
+            case '+': Consume(); tokens.emplace_back(TokenType::PLUS); break;
+            case '-': Consume(); tokens.emplace_back(TokenType::MINUS); break;
+            case '*': Consume(); tokens.emplace_back(TokenType::MULTIPLICATION); break;
+            case '/': Consume(); tokens.emplace_back(TokenType::DIVISION); break;
+            case '(': Consume(); tokens.emplace_back(TokenType::LEFT_PAREN); break;
+            case ')': Consume(); tokens.emplace_back(TokenType::RIGHT_PAREN); break;
+            case '{': Consume(); tokens.emplace_back(TokenType::LEFT_BRACE); break;
+            case '}': Consume(); tokens.emplace_back(TokenType::RIGHT_BRACE); break;
+            case '"': {
+                Consume(); // "
+
+                std::string literal;
+                while (Peek().has_value() && Peek().value() != '"')
+                    literal += Consume().value();
+
+                Consume(); // "
+
+                tokens.emplace_back(TokenType::STRING, literal);
+                break;
+            }
             case '!': {
                 Consume();
                 if (Peek().has_value() && Peek().value() == '=') {
                     Consume();
-                    tokens.push_back(Token{&curr_char, TokenType::BANG_EQUAL});
+                    tokens.emplace_back(TokenType::BANG_EQUAL);
                     break;
                 } else {
-                    tokens.push_back(Token{&curr_char, TokenType::BANG});
+                    tokens.emplace_back(TokenType::BANG);
                     break;
                 }
 
@@ -39,10 +56,10 @@ void Tokenizer::Tokenize(const std::string& src, OUT std::vector<Token>& tokens)
                 Consume();
                 if (Peek().has_value() && Peek().value() == '=') {
                     Consume();
-                    tokens.push_back(Token{&curr_char, TokenType::EQUAL_EQUAL});
+                    tokens.emplace_back(TokenType::EQUAL_EQUAL);
                     break;
                 } else {
-                    tokens.push_back(Token{&curr_char, TokenType::EQUAL});
+                    tokens.emplace_back(TokenType::EQUAL);
                     break;
                 }
 
@@ -51,7 +68,7 @@ void Tokenizer::Tokenize(const std::string& src, OUT std::vector<Token>& tokens)
                 if (PeekN(2) == "&&") {
                     Consume();
                     Consume();
-                    tokens.push_back(Token{"&&", TokenType::AND});
+                    tokens.emplace_back(TokenType::AND);
                 }
 
                 break;
@@ -60,7 +77,7 @@ void Tokenizer::Tokenize(const std::string& src, OUT std::vector<Token>& tokens)
                 if (PeekN(2) == "||") {
                     Consume();
                     Consume();
-                    tokens.push_back(Token{"||", TokenType::OR});
+                    tokens.emplace_back(TokenType::OR);
                 }
 
                 break;
@@ -68,10 +85,10 @@ void Tokenizer::Tokenize(const std::string& src, OUT std::vector<Token>& tokens)
             case '<': {
                 Consume();
                 if (Peek().has_value() && Peek().value() == '=') {
-                    tokens.push_back(Token{"<=", TokenType::LESS_EQUAL});
+                    tokens.emplace_back(TokenType::LESS_EQUAL);
                     Consume();
                 } else {
-                    tokens.push_back(Token{"<", TokenType::LESS});
+                    tokens.emplace_back(TokenType::LESS);
                 }
 
                 break;
@@ -79,35 +96,33 @@ void Tokenizer::Tokenize(const std::string& src, OUT std::vector<Token>& tokens)
             case '>': {
                 Consume();
                 if (Peek().has_value() && Peek().value() == '=') {
-                    tokens.push_back(Token{">=", TokenType::GREATER_EQUAL});
+                    tokens.emplace_back(TokenType::GREATER_EQUAL);
                     Consume();
                 }
                 else
-                    tokens.push_back(Token{">", TokenType::GREATER});
+                    tokens.emplace_back(TokenType::GREATER);
 
                 break;
             }
             default: {
-                // TODO: FIX
                 if (std::isdigit(curr_char)) {
-                    tokens.push_back(ConsumeNum());
+                    tokens.emplace_back(ConsumeNum());
                     break;
                 }
-                if (PeekN(4) == "true") {
-                    // TODO: ConsumeN
-                    tokens.push_back(Token{true});
-                    break;
+                else if (std::isalpha(curr_char)) {
+                    tokens.emplace_back(ConsumeIdentifier());
                 }
-                if (PeekN(5) == "false"){
-                    tokens.push_back(Token{false});
-                    break;
+                else {
+                    throw std::runtime_error("Wrong token");
                 }
             }
 
         }
     }
 
-    tokens.push_back(Token{TokenType::EOF_});
+    tokens.emplace_back(TokenType::EOF_);
+
+    return tokens;
 }
 
 std::optional<char> Tokenizer::Peek() {
@@ -152,6 +167,17 @@ Token Tokenizer::ConsumeNum() {
 
     throw std::logic_error("Unidentified token");
 };
+
+Token Tokenizer::ConsumeIdentifier() {
+    std::string identifier;
+    while (Peek().has_value() && (std::isalnum(Peek().value()) || Peek().value() == '_'))
+        identifier += Consume().value();
+
+    if (reserved_words.contains(identifier))
+        return Token{reserved_words[identifier]};
+
+    return Token {TokenType::IDENTIFIER, identifier};
+}
 
 std::string Tokenizer::PeekN(int n) {
     std::string s;
