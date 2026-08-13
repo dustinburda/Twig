@@ -15,7 +15,7 @@ public:
         return tokenizer;
     }
 
-    void Tokenize(const std::string& src, OUT std::vector<Token>& tokens);
+    std::vector<Token> Tokenize(const std::string& src);
 
 
 private:
@@ -23,6 +23,7 @@ private:
     std::string PeekN(int n);
     std::optional<char> Consume();
     Token ConsumeNum();
+    Token ConsumeIdentifier();
     void ConsumeWhitespace();
 
 
