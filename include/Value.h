@@ -7,10 +7,12 @@
 
 #include <iostream>
 
+
 enum class ValueType {
     Int,
     Double,
-    Boolean
+    Boolean,
+    String
 };
 
 struct Value {
@@ -21,14 +23,11 @@ public:
         int int_value;
         double double_value;
         bool bool_value;
+        const char* string_value_;
     };
 
     Value (int i) : type{ValueType::Int}, int_value{i} {}
     Value (double d) : type{ValueType::Double}, double_value{d} {}
-
-    friend std::ostream& operator<<(std::ostream& os, Value& v);
 };
-
-std::ostream& operator<<(std::ostream& os, Value& v);
 
 #endif //TWIG_VALUE_H
