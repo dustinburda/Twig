@@ -6,14 +6,12 @@
 
 void Interpreter::Interpret(std::string& src) {
     Tokenizer& tokenizer = Tokenizer::GetInstance();
+    auto tokens = tokenizer.Tokenize(src);
 
-    [[ maybe_unused ]] auto tokens = tokenizer.Tokenize(src);
-    //
-    // Parser& parser = Parser::GetInstance();
-    // auto ast = parser.Parse(tokens);
-    //
+    Parser& parser = Parser::GetInstance();
+    auto ast = parser.Parse(tokens);
+
     // auto result = Evaluate(ast);
-    //
     // std::cout << result << std::endl;
 }
 

@@ -1,5 +1,14 @@
 #include "../include/Parser.h"
 
+Parser::Parser() : tokens_(), index_(0) {
+
+}
+
+Parser& Parser::GetInstance() {
+    static Parser parser;
+    return parser;
+}
+
 
 std::unique_ptr<ASTNode> Parser::ParseGrouping() {
     return nullptr;
@@ -54,13 +63,25 @@ std::unique_ptr<ASTNode> Parser::Parse(const std::vector<Token>& tokens) {
 }
 
 std::optional<Token> Parser::Peek() {
+    if (index_ >= tokens_.size())
+        return std::nullopt;
 
+    return tokens_[index_];
 }
 
 std::optional<Token> Parser::PeekN(int n) {
+    if (index_ + n >= tokens_.size())
+        return std::nullopt;
 
+    return tokens_[index_ + n];
 }
 
 std::optional<Token> Parser::Consume() {
+    if (index_ >= tokens_.size())
+        return std::nullopt;
 
+    auto token = tokens_[index_];
+    index_++;
+
+    return token;
 }

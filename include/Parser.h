@@ -27,10 +27,7 @@
 
 class Parser {
 public:
-    static Parser& GetInstance() {
-        static Parser parser;
-        return parser;
-    }
+    static Parser& GetInstance();
 
     std::unique_ptr<ASTNode> Parse(const std::vector<Token>& tokens);
 
