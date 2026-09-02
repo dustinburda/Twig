@@ -33,6 +33,9 @@ enum class BinaryOperation {
 };
 
 struct Binary : ASTNode {
+    Binary(BinaryOperation op, std::unique_ptr<ASTNode> left, std::unique_ptr<ASTNode> right)
+        : operation_{op}, left_expr_(std::move(left)), right_expr_(std::move(right)) {}
+
     BinaryOperation operation_;
     std::unique_ptr<ASTNode> left_expr_;
     std::unique_ptr<ASTNode> right_expr_;
@@ -44,6 +47,8 @@ enum class UnaryOperation {
 };
 
 struct Unary : ASTNode {
+    Unary(UnaryOperation operation, std::unique_ptr<ASTNode> expr)
+        : operation_{operation}, expr_{std::move(expr)} {}
 
     UnaryOperation operation_;
     std::unique_ptr<ASTNode> expr_;

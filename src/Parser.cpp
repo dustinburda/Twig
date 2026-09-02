@@ -57,36 +57,111 @@ std::unique_ptr<ASTNode> Parser::ParsePrimary() {
 std::unique_ptr<ASTNode> Parser::ParseUnary() {
     if (MatchTokens({TokenType::BANG, TokenType::MINUS})) {
         auto token = Consume();
-        // TODO: Transform
-        auto unary = ParseUnary();
 
-        return nullptr;
-        // return std::make_unique<Unary>()
+        UnaryOperation op;
+        if (token->type_ == TokenType::BANG)
+            op = UnaryOperation::LogicalNot;
+        else if (token->type_ == TokenType::MINUS)
+            op = UnaryOperation::Negate;
+
+        return std::make_unique<Unary>(op, ParseUnary());
     }
 
     return ParsePrimary();
 }
 
 std::unique_ptr<ASTNode> Parser::ParseMult() {
-    return nullptr;
+    auto node = ParseUnary();
+
+    while (MatchTokens({TokenType::MULTIPLICATION, TokenType::DIVISION})) {
+        auto token = Consume();
+
+        BinaryOperation op;
+        if (token->type_ == TokenType::MULTIPLICATION)
+            op = BinaryOperation::MULTIPLICATION;
+        else if (token->type_ == TokenType::DIVISION)
+            op = BinaryOperation::DIVISION;
+
+        node = std::make_unique<Binary>(op, std::move(node), ParseUnary());
+    }
+
+    return node;
 }
 
 std::unique_ptr<ASTNode> Parser::ParseAdd() {
-    return nullptr;
+    auto node = ParseMult();
+
+    while (MatchTokens({TokenType::PLUS, TokenType::MINUS})) {
+        auto token = Consume();
+
+        BinaryOperation op;
+        if (token->type_ == TokenType::PLUS)
+            op = BinaryOperation::PLUS;
+        else if (token->type_ == TokenType::MINUS)
+            op = BinaryOperation::MINUS;
+
+        node = std::make_unique<Binary>(op, std::move(node), ParseMult());
+    }
+
+    return node;
 }
 
 std::unique_ptr<ASTNode> Parser::ParseInequality() {
-    return nullptr;
+    auto node = ParseAdd();
+
+    while (MatchTokens({TokenType::LESS, TokenType::LESS_EQUAL, TokenType::GREATER, TokenType::GREATER_EQUAL})) {
+        auto token = Consume();
+
+        BinaryOperation op;
+        if (token->type_ == TokenType::LESS)
+            op = BinaryOperation::LESS;
+        else if (token->type_ == TokenType::LESS_EQUAL)
+            op = BinaryOperation::LESS_EQUAL;
+        else if (token->type_ == TokenType::GREATER)
+            op = BinaryOperation::GREATER;
+        else if (token->type_ == TokenType::GREATER_EQUAL)
+            op = BinaryOperation::GREATER_EQUAL;
+
+        node = std::make_unique<Binary>(op, std::move(node), ParseAdd());
+    }
+
+    return node;
 }
 
 std::unique_ptr<ASTNode> Parser::ParseLogical() {
-    return nullptr;
+    auto node = ParseInequality();
+
+    while (MatchTokens({TokenType::AND, TokenType::OR})) {
+        auto token = Consume();
+
+        BinaryOperation op;
+        if (token->type_ == TokenType::AND)
+            op = BinaryOperation::AND;
+        else if (token->type_ == TokenType::OR)
+            op = BinaryOperation::OR;
+
+        node = std::make_unique<Binary>(op, std::move(node), ParseInequality());
+    }
+
+    return node;
 }
 
 std::unique_ptr<ASTNode> Parser::ParseComparison() {
-    auto logical = ParseLogical();
+    auto node = ParseLogical();
 
+    while (MatchTokens({TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL})) {
+        auto token = Consume();
 
+        BinaryOperation op;
+        if (token->type_ == TokenType::BANG_EQUAL)
+            op = BinaryOperation::BANG_EQUAL;
+        else if (token->type_ == TokenType::EQUAL_EQUAL)
+            op = BinaryOperation::EQUAL_EQUAL;
+
+        node = std::make_unique<Binary>(op, std::move(node), ParseLogical());
+    }
+
+    return node;
 }
 
 
@@ -134,6 +209,13 @@ std::optional<Token> Parser::Consume() {
     return token;
 }
 
-bool Parser::MatchTokens( [[ maybe_unused ]] const std::vector<TokenType>& tokens) {
-    return false;
+bool Parser::MatchTokens(const std::vector<TokenType>& token_types) {
+    if (!Peek().has_value())
+        return false;
+
+    auto it = std::find_if(token_types.begin(), token_types.end(), [this](auto token_type) {
+        return token_type == Peek().value().type_;
+    });
+
+    return it != token_types.end();
 }
