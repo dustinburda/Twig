@@ -19,6 +19,7 @@ enum class TokenType {
     // Literals
     STRING,
 
+    // NUMBER
     INTEGER,
     DOUBLE,
 
@@ -35,10 +36,14 @@ enum class TokenType {
     LEFT_BRACE,
     RIGHT_BRACE,
 
-    // Logical Operators
+    // Logical Unary Operator
     BANG,
-    BANG_EQUAL,
+
+    // Assignment
     EQUAL,
+
+    // Logical Binary Operators
+    BANG_EQUAL,
     EQUAL_EQUAL,
 
     LESS,
