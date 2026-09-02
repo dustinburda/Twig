@@ -23,11 +23,23 @@ public:
         int int_value;
         double double_value;
         bool bool_value;
-        const char* string_value_;
+        char* string_value_;
     };
 
     Value (int i) : type{ValueType::Int}, int_value{i} {}
     Value (double d) : type{ValueType::Double}, double_value{d} {}
+    Value (const char* s) : type{ValueType::String} {
+        int length = strlen(s);
+        string_value_ = new char[length + 1];
+        std::memcpy(string_value_, s, length);
+        string_value_[length] = '\0';
+    }
+    Value (bool b) : type{ValueType::Boolean}, bool_value{b} {}
+
+    ~Value() {
+        if (type == ValueType::String)
+            delete[] string_value_;
+    }
 };
 
 #endif //TWIG_VALUE_H

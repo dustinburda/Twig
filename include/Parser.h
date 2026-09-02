@@ -46,6 +46,7 @@ private:
     std::optional<Token> Peek();
     std::optional<Token> PeekN(int n);
     std::optional<Token> Consume();
+    bool MatchTokens(const std::vector<TokenType>& tokens);
 
     Parser();
 
