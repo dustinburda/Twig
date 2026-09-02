@@ -32,6 +32,12 @@ enum class BinaryOperation {
     OR,
 };
 
+struct Program : ASTNode {
+    Program(std::vector<std::unique_ptr<ASTNode>> expressions) : expressions_(std::move(expressions)) {}
+
+    std::vector<std::unique_ptr<ASTNode>> expressions_;
+};
+
 struct Binary : ASTNode {
     BinaryOperation operation_;
     std::unique_ptr<ASTNode> left_expr_;
