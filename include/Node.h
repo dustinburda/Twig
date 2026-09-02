@@ -7,10 +7,10 @@ struct ASTNode {
 
 };
 
+struct Program : ASTNode {
+    Program(std::vector<std::unique_ptr<ASTNode>> expressions) : expressions_(std::move(expressions)) {}
 
-
-struct Literal : ASTNode {
-    Value value_;
+    std::vector<std::unique_ptr<ASTNode>> expressions_;
 };
 
 enum class BinaryOperation {
@@ -32,12 +32,6 @@ enum class BinaryOperation {
     OR,
 };
 
-struct Program : ASTNode {
-    Program(std::vector<std::unique_ptr<ASTNode>> expressions) : expressions_(std::move(expressions)) {}
-
-    std::vector<std::unique_ptr<ASTNode>> expressions_;
-};
-
 struct Binary : ASTNode {
     BinaryOperation operation_;
     std::unique_ptr<ASTNode> left_expr_;
@@ -57,6 +51,12 @@ struct Unary : ASTNode {
 
 struct Grouping : ASTNode {
     std::unique_ptr<ASTNode> expr_;
+};
+
+struct Literal : ASTNode {
+    Literal(Value value) : value_{value} {}
+
+    Value value_;
 };
 
 
